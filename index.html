@@ -341,9 +341,9 @@ body{
 //  CONFIG
 // ══════════════════════════════════════════════
 const API_URL = 'https://aqeleulwobgamdffkfri.supabase.co/functions/v1/public-channels';
-const ALLOWED = ['oinktech', 'twixoff'];
+const ALLOWED = ['oinktech', 'twixoff', 'ТВ КАНАЛЫ'];
 const SOURCES = [
-  { id:'embess',  label:'Embess Studio', url: id => `https://embesslivestudio.lovable.app/?channelId=${id}` },
+  { id:'embess',  label:'Embess Studio', url: id => `https://embesslivestudio.lovable.app/player?channel=${id}` },
   { id:'native',  label:'StreamLiveTV',  url: id => `https://bbacesemc33e7hd47kfq.containers.yandexcloud.net/embed/${id}` },
 ];
 
