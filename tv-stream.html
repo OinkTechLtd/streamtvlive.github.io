@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StreamTV — Прямые эфиры</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#080c14;--bg2:#0d1220;--bg3:#141926;--bg4:#1a2133;
+    --accent:#e8303a;--text:#f0f4ff;--text2:#8a9bb8;--text3:#4a5a7a;
+    --border:#1e2a40;--glow:rgba(232,48,58,.35);
+    --sidebar:300px;--header:60px;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);height:100vh;overflow:hidden;display:flex;flex-direction:column}
+
+  header{height:var(--header);background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:14px;flex-shrink:0;z-index:100}
+  .logo{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:2px;display:flex;align-items:center;gap:8px;white-space:nowrap}
+  .logo span{color:var(--accent)}
+  .logo-dot{width:8px;height:8px;background:var(--accent);border-radius:50%;box-shadow:0 0 8px var(--accent);animation:blink 1.5s ease-in-out infinite}
+  @keyframes blink{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.75)}}
+  .h-search{flex:1;max-width:320px;position:relative}
+  .h-search input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Manrope',sans-serif;font-size:13px;padding:8px 12px 8px 34px;outline:none;transition:border-color .2s}
+  .h-search input:focus{border-color:var(--accent)}
+  .h-search input::placeholder{color:var(--text3)}
+  .h-search svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text3);pointer-events:none}
+  .h-tabs{display:flex;gap:4px;margin-left:auto}
+  .htab{padding:6px 14px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;border:1px solid transparent;color:var(--text2);background:none;transition:all .2s}
+  .htab:hover{background:var(--bg3);color:var(--text)}
+  .htab.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .type-filter{display:flex;gap:6px}
+  .type-btn{padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:none;color:var(--text2);transition:all .2s;white-space:nowrap}
+  .type-btn:hover{background:var(--bg4);color:var(--text)}
+  .type-btn.on{border-color:var(--accent);color:var(--accent);background:rgba(232,48,58,.08)}
+
+  .main{display:flex;flex:1;overflow:hidden}
+
+  .sidebar{width:var(--sidebar);background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow:hidden}
+  .sb-head{padding:12px 14px 8px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+  .sb-title{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3)}
+  .sb-count{font-size:11px;color:var(--text3);background:var(--bg3);padding:2px 8px;border-radius:20px}
+  .ch-list{flex:1;overflow-y:auto;padding:6px;scrollbar-width:thin;scrollbar-color:var(--bg4) transparent}
+  .ch-list::-webkit-scrollbar{width:4px}
+  .ch-list::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:4px}
+  .ch-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;cursor:pointer;transition:all .15s;border:1px solid transparent;margin-bottom:2px}
+  .ch-item:hover{background:var(--bg3)}
+  .ch-item.on{background:var(--bg4);border-color:var(--accent)}
+  .ch-logo{width:44px;height:30px;border-radius:6px;background:var(--bg4);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;font-size:9px;font-weight:700;color:var(--text3);text-align:center;line-height:1.2}
+  .ch-logo img{width:100%;height:100%;object-fit:contain;padding:3px}
+  .ch-info{flex:1;min-width:0}
+  .ch-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ch-sub{font-size:11px;color:var(--text3);margin-top:1px}
+  .pip-live{width:6px;height:6px;background:#3dd68c;border-radius:50%;flex-shrink:0;box-shadow:0 0 5px #3dd68c}
+  .pip-off{width:6px;height:6px;background:var(--text3);border-radius:50%;flex-shrink:0}
+
+  .content{flex:1;display:flex;flex-direction:column;overflow:hidden}
+
+  /* GRID */
+  .grid-wrap{flex:1;overflow-y:auto;padding:20px;scrollbar-width:thin;scrollbar-color:var(--bg4) transparent}
+  .grid-wrap::-webkit-scrollbar{width:6px}
+  .grid-wrap::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:4px}
+  .sec-lbl{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);margin-bottom:14px;display:flex;align-items:center;gap:10px}
+  .sec-lbl::after{content:'';flex:1;height:1px;background:var(--border)}
+  .ch-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:12px;margin-bottom:28px}
+  .card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;cursor:pointer;transition:all .2s;position:relative}
+  .card:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.4)}
+  .card-thumb{height:88px;background:var(--bg4);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+  .card-thumb img{max-width:72%;max-height:64%;object-fit:contain;filter:drop-shadow(0 2px 6px rgba(0,0,0,.5))}
+  .card-fb{color:var(--text3);font-size:11px;font-weight:700;text-align:center;padding:4px}
+  .play-ov{position:absolute;inset:0;background:rgba(232,48,58,0);display:flex;align-items:center;justify-content:center;transition:background .2s}
+  .card:hover .play-ov{background:rgba(232,48,58,.18)}
+  .play-ic{width:36px;height:36px;border-radius:50%;background:rgba(232,48,58,.9);display:flex;align-items:center;justify-content:center;opacity:0;transform:scale(.7);transition:all .2s;box-shadow:0 0 16px var(--glow)}
+  .card:hover .play-ic{opacity:1;transform:scale(1)}
+  .live-badge{position:absolute;top:7px;right:7px;background:var(--accent);color:#fff;font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;letter-spacing:.5px}
+  .live-badge.off{background:var(--bg4);color:var(--text3)}
+  .radio-badge{position:absolute;top:7px;left:7px;background:rgba(61,214,140,.12);color:#3dd68c;font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;border:1px solid rgba(61,214,140,.3)}
+  .card-body{padding:9px 11px}
+  .card-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .card-owner{font-size:11px;color:var(--text3);margin-top:2px}
+
+  /* PLAYER */
+  .player-view{display:flex;flex-direction:column;height:100%;overflow:hidden}
+
+  .player-top{flex-shrink:0;background:#000;position:relative}
+  .embed-wrap{width:100%;padding-bottom:56.25%;height:0;position:relative}
+  .embed-wrap iframe{position:absolute;inset:0;width:100%;height:100%;border:none}
+
+  /* SOURCE SWITCHER — как на smotret.tv */
+  .source-bar{
+    display:flex;align-items:center;gap:8px;
+    padding:8px 16px;
+    background:var(--bg2);
+    border-bottom:1px solid var(--border);
+    flex-shrink:0;
+  }
+  .source-label{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text3);white-space:nowrap}
+  .src-btn{
+    padding:5px 14px;border-radius:6px;font-size:12px;font-weight:700;
+    cursor:pointer;border:1px solid var(--border);
+    background:var(--bg3);color:var(--text2);
+    transition:all .2s;display:flex;align-items:center;gap:6px;
+  }
+  .src-btn:hover{background:var(--bg4);color:var(--text);border-color:var(--text3)}
+  .src-btn.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .src-dot{width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.7}
+
+  .pib{padding:10px 18px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-shrink:0}
+  .pib-logo{width:46px;height:32px;border-radius:6px;background:var(--bg4);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;font-size:9px;font-weight:700;color:var(--text3)}
+  .pib-logo img{width:100%;height:100%;object-fit:contain;padding:4px}
+  .pib-name{font-size:16px;font-weight:700;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pib-owner{font-size:12px;color:var(--text3);flex-shrink:0}
+  .pib-live{background:var(--accent);color:#fff;font-size:11px;font-weight:700;letter-spacing:1px;padding:3px 10px;border-radius:4px;display:flex;align-items:center;gap:5px;flex-shrink:0}
+  .pib-live::before{content:'';width:6px;height:6px;background:#fff;border-radius:50%;animation:blink 1s infinite}
+  .pib-off{background:var(--bg4);color:var(--text3);font-size:11px;font-weight:700;padding:3px 10px;border-radius:4px;flex-shrink:0}
+
+  .p-related{flex:1;overflow-y:auto;padding:14px 18px;background:var(--bg2)}
+
+  .state-screen{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:var(--text3)}
+  .loader{width:38px;height:38px;border:3px solid var(--bg4);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .no-ch{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--text3)}
+  .no-ch-icon{width:76px;height:76px;border:2px dashed var(--border);border-radius:14px;display:flex;align-items:center;justify-content:center;margin-bottom:6px}
+  .no-ch h3{color:var(--text2);font-size:15px}
+
+  @media(max-width:700px){:root{--sidebar:220px}.h-search,.type-filter{display:none}}
+  @media(max-width:520px){.sidebar{display:none}.content{width:100%}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo"><div class="logo-dot"></div>Stream<span>TV</span></div>
+  <div class="h-search">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input type="text" id="searchInput" placeholder="Поиск каналов...">
+  </div>
+  <div class="type-filter">
+    <button class="type-btn on" onclick="setType(this,'all')">Все</button>
+    <button class="type-btn"   onclick="setType(this,'tv')">📺 ТВ</button>
+    <button class="type-btn"   onclick="setType(this,'radio')">📻 Радио</button>
+  </div>
+  <div class="h-tabs">
+    <button class="htab on" id="tabGrid"   onclick="switchView('grid')">Сетка</button>
+    <button class="htab"    id="tabPlayer" onclick="switchView('player')">Плеер</button>
+  </div>
+</header>
+
+<div class="main">
+  <div class="sidebar">
+    <div class="sb-head">
+      <span class="sb-title">Каналы</span>
+      <span class="sb-count" id="sbCount">—</span>
+    </div>
+    <div class="ch-list" id="chList"></div>
+  </div>
+  <div class="content" id="content"></div>
+</div>
+
+<script>
+// ════════════════════════════════════════
+//  EMBED SOURCES
+// ════════════════════════════════════════
+const SOURCES = [
+  {
+    id:    'embess',
+    label: 'Embess Studio',
+    icon:  '▶',
+    url:   id => `https://embesslivestudio.lovable.app/player?channel=${id}`,
+  },
+  {
+    id:    'native',
+    label: 'StreamLiveTV',
+    icon:  '📡',
+    url:   id => `https://bbacesemc33e7hd47kfq.containers.yandexcloud.net/embed/${id}`,
+  },
+];
+let currentSource = 0; // индекс активного источника
+
+// ════════════════════════════════════════
+//  HARDCODED CHANNELS (из API, уже отфильтрованные)
+//  + попытка дозагрузить свежие данные с API
+// ════════════════════════════════════════
+const HARDCODED = [
+  {id:"944ce691-9339-47d2-bf6c-5eb3033c7730",name:"Телеканал Oink Platforms",thumb:"",type:"tv",live:false,owner:"Twixoff"},
+  {id:"9aac249c-1381-4461-9191-3361cafd63b6",name:"Телеканал Twixoff",thumb:"",type:"tv",live:false,owner:"Twixoff"},
+  {id:"fa17c0ef-1323-49c2-b3d2-273ddfe027fa",name:"StreamLiveTV",thumb:"",type:"tv",live:false,owner:"oinktech"},
+  {id:"5864c087-b58a-466e-9c76-3d88134b4207",name:"Радио на Движе",thumb:"",type:"radio",live:false,owner:"oinktech"},
+  {id:"ad12d5b7-4802-4306-9c77-2a7ac5586c0c",name:"Телеканал Дождь",thumb:"",type:"tv",live:false,owner:"Twixoff"},
+  {id:"a54158e5-4ab3-4ae2-9480-03aef7288415",name:"ИИ LIVE",thumb:"https://aqeleulwobgamdffkfri.supabase.co/storage/v1/object/public/channel-thumbnails/e93df6e9-cf66-41a4-a65f-26e56a47c28b/a54158e5-4ab3-4ae2-9480-03aef7288415-1764664685681.jpeg",type:"tv",live:false,owner:"Twixoff"},
+  {id:"8b52851c-5855-45da-a740-c64a357d0e2f",name:"МУЗ ТВ",thumb:"",type:"tv",live:false,owner:"oinktech"},
+  {id:"b22ecfe0-655e-4701-ac8f-8e5d1681f7b9",name:"Телеканал Ясный Взор",thumb:"https://aqeleulwobgamdffkfri.supabase.co/storage/v1/object/public/channel-thumbnails/622783c5-4d1d-4aea-96d9-597a64faaef6/b22ecfe0-655e-4701-ac8f-8e5d1681f7b9-1764758048504.gif",type:"tv",live:false,owner:"oinktech"},
+  {id:"67eefec1-4636-45c4-a5f3-f8ce8a888d9d",name:"Телеканал Солнце",thumb:"",type:"tv",live:false,owner:"oinktech"},
+  {id:"eaf6fba6-081c-4dde-be55-18fc64374727",name:"Смотрим РТР",thumb:"",type:"tv",live:false,owner:"oinktech"},
+  {id:"c876dd81-9183-4344-a17b-c305ef2fd999",name:"Россия 24",thumb:"",type:"tv",live:false,owner:"oinktech"},
+  {id:"4dc93259-b6f9-4dd1-9472-4a0b15be8bb8",name:"МИР",thumb:"",type:"tv",live:false,owner:"oinktech"},
+  {id:"ac272a95-afa2-4ea3-a7b6-95c9bf760fcc",name:"Карусель",thumb:"",type:"tv",live:false,owner:"oinktech"},
+  {id:"4e37afa9-792a-4b3a-b6a4-c6c0676aff5d",name:"Новости России и Украины",thumb:"",type:"tv",live:false,owner:"oinktech"},
+  {id:"dabe99e1-cb3e-49c0-810b-5b67bbec371d",name:"СОЛОВЬЕВ ЛАЙФ",thumb:"",type:"tv",live:false,owner:"oinktech"},
+  {id:"30406b23-3af2-4186-a836-62a1b5502d96",name:"МИР 24",thumb:"",type:"tv",live:false,owner:"oinktech"},
+  {id:"c7e3e329-6b14-4d41-bc27-ded8d0551386",name:"Телеканал Oink Platforms (Оригинал)",thumb:"https://aqeleulwobgamdffkfri.supabase.co/storage/v1/object/public/channel-thumbnails/622783c5-4d1d-4aea-96d9-597a64faaef6/c7e3e329-6b14-4d41-bc27-ded8d0551386-1764762740314.webp",type:"tv",live:false,owner:"oinktech"},
+  {id:"67560c56-4a58-4690-99df-b10054d0314f",name:"Радио Молодежное",thumb:"",type:"radio",live:false,owner:"oinktech"},
+  {id:"4d4df412-c7c0-444e-8623-74be1a80788e",name:"Телеканал НТВ",thumb:"",type:"tv",live:false,owner:"oinktech"},
+  {id:"7334a8c1-3c24-4f42-905e-30719cb96d66",name:"ДЕТЯМ VEZEM ТВ",thumb:"https://aqeleulwobgamdffkfri.supabase.co/storage/v1/object/public/channel-thumbnails/622783c5-4d1d-4aea-96d9-597a64faaef6/7334a8c1-3c24-4f42-905e-30719cb96d66-1764765473082.png",type:"tv",live:false,owner:"oinktech"},
+  {id:"33c21703-9dcf-4991-aafa-0da06ec04f53",name:"MOSCOW24",thumb:"",type:"tv",live:false,owner:"oinktech"},
+  {id:"640b6140-6fde-4d3d-add8-67c71c273be1",name:"ТНТ И ТНТ4",thumb:"",type:"tv",live:false,owner:"oinktech"},
+  {id:"8102e071-7fdd-48eb-978a-e992e0da27b1",name:"Моя Планета",thumb:"",type:"tv",live:false,owner:"oinktech"},
+  {id:"39ba94b7-b58b-4e86-8f24-e2954dac8292",name:"СТС",thumb:"",type:"tv",live:false,owner:"oinktech"},
+  {id:"812c2fd3-05fe-4af4-8897-65f14182e9f2",name:"2x2",thumb:"",type:"tv",live:false,owner:"oinktech"},
+  {id:"3588814a-834d-490b-b3cf-fd156f8dc581",name:"Смотрим.ру",thumb:"",type:"tv",live:false,owner:"oinktech"},
+  {id:"3c38c7c7-c7e1-497f-a184-ce64d69ac149",name:"ТВ КАНАЛЫ РОССИИ",thumb:"",type:"tv",live:false,owner:"oinktech"},
+  {id:"d9e13800-3e02-4b8e-877e-75e6e35b383c",name:"МУЛЬТ",thumb:"",type:"tv",live:false,owner:"oinktech"},
+  {id:"e4f20900-8753-4a66-8075-aa0dcced3ec0",name:"ФИЛЬМЫ НА ЗАКАЗ",thumb:"",type:"tv",live:false,owner:"oinktech"},
+  {id:"8c9651c9-5a0f-4c5a-b7ee-f6cf2dc0ac5e",name:"Тайны Галактики",thumb:"",type:"tv",live:false,owner:"oinktech"},
+  {id:"e87b48ae-156b-40cc-bdcb-6cf4aaa5cc24",name:"Radio TV-13482",thumb:"",type:"radio",live:false,owner:"oinktech"},
+  {id:"27b8ee5b-ef7f-40a8-b5c5-6adc3c062244",name:"Телеканал Соловьёв ПРО",thumb:"",type:"tv",live:false,owner:"oinktech"},
+  {id:"95d628c1-20a2-4b69-b543-d2c49c6ac26a",name:"Nicktoons (Nickodelon)",thumb:"",type:"tv",live:false,owner:"oinktech"},
+  {id:"1e4924e9-6845-453d-95b6-fd249a5acde2",name:"Радио TwixoffStream",thumb:"",type:"radio",live:false,owner:"oinktech"},
+  {id:"500c469a-3c7e-44be-81a0-a3085174098e",name:"TV Live",thumb:"",type:"tv",live:false,owner:"oinktech"},
+  {id:"6bc86911-3ae2-4f71-9ff2-debe138f1133",name:"СТС ЛОВЕ",thumb:"",type:"tv",live:false,owner:"oinktech"},
+  {id:"85943a64-1468-4487-9ea3-24c93b490295",name:"РТР БЕЛАРУСЬ",thumb:"",type:"tv",live:false,owner:"oinktech"},
+  {id:"3e7a1565-ddd8-44a8-9f3d-9741559885d9",name:"РТР (Мир)",thumb:"",type:"tv",live:false,owner:"oinktech"},
+  {id:"118426d4-9d98-43d5-9734-0233f248cf30",name:"NEWSFRONT",thumb:"",type:"tv",live:false,owner:"oinktech"},
+  {id:"6ec1fc34-d999-413c-ba36-5b2faa7e981d",name:"БелРос",thumb:"",type:"tv",live:false,owner:"oinktech"},
+  {id:"9718f617-0667-452a-8369-ba88fe056504",name:"КАЗАХСТАНСКОЕ КИНО",thumb:"",type:"tv",live:false,owner:"oinktech"},
+  {id:"78b15f69-d4eb-43ab-a96f-0afa913017ed",name:"Радио Юность",thumb:"",type:"radio",live:false,owner:"oinktech"},
+  {id:"6cea5046-b725-4cf7-953f-c747359643cc",name:"StreamTV",thumb:"",type:"tv",live:false,owner:"oinktech"},
+  {id:"a1882f25-6dc4-4b47-a93f-6c6c5cc73356",name:"ФИЛЬМЫ И СЕРИАЛЫ",thumb:"https://aqeleulwobgamdffkfri.supabase.co/storage/v1/object/public/channel-thumbnails/622783c5-4d1d-4aea-96d9-597a64faaef6/a1882f25-6dc4-4b47-a93f-6c6c5cc73356-1764844170148.webp",type:"tv",live:false,owner:"oinktech"},
+  {id:"af0b57ad-a917-4da6-967c-4de523d3b2a5",name:"Телеканал Oink Platforms",thumb:"",type:"tv",live:false,owner:"Twixoff"},
+];
+
+const API_URL = 'https://aqeleulwobgamdffkfri.supabase.co/functions/v1/public-channels';
+const ALLOWED = ['oinktech','twixoff'];
+
+let allCh = [], view = [];
+let currentCh = null, curView = 'grid';
+let typeF = 'all', searchQ = '';
+const seenIds = new Set();
+
+// ════════════════════════════════════════
+//  INIT — сразу показываем хардкод, потом дозагружаем с API
+// ════════════════════════════════════════
+window.onload = () => {
+  // Сначала грузим хардкод — мгновенно
+  processChannels(HARDCODED);
+
+  // Потом пробуем свежие данные с API в фоне
+  fetch(API_URL, { method:'GET', headers:{'Accept':'application/json'} })
+    .then(r => r.json())
+    .then(json => {
+      const list = extractList(json);
+      console.log('API fresh data:', list.length, 'channels');
+      processChannels(list);
+      const tp = json.pagination?.total_pages || 1;
+      if (tp > 1) loadRestPages(tp);
+    })
+    .catch(e => console.warn('API fetch failed (using hardcoded):', e.message));
+
+  document.getElementById('searchInput').addEventListener('input', e => {
+    searchQ = e.target.value.toLowerCase().trim();
+    applyFilters();
+  });
+};
+
+async function loadRestPages(total) {
+  for (let p = 2; p <= total; p++) {
+    await new Promise(r => setTimeout(r, 500));
+    fetch(`${API_URL}?page=${p}&limit=50`, { method:'GET', headers:{'Accept':'application/json'} })
+      .then(r => r.json())
+      .then(json => processChannels(extractList(json)))
+      .catch(() => {});
+  }
+}
+
+function extractList(json) {
+  if (Array.isArray(json)) return json;
+  for (const k of ['data','channels','items','results','list','streams']) {
+    if (Array.isArray(json[k])) return json[k];
+  }
+  return [];
+}
+
+function processChannels(list) {
+  const ALLOW_NAMES = ['oinktech','twixoff'];
+  const fresh = list
+    .filter(ch => {
+      const u = (ch.owner?.username || ch.owner || '').toLowerCase();
+      return ALLOW_NAMES.some(a => u.includes(a));
+    })
+    .filter(ch => {
+      if (seenIds.has(ch.id)) return false;
+      seenIds.add(ch.id);
+      return true;
+    })
+    .map(ch => ({
+      id:    ch.id,
+      name:  (ch.title || ch.name || 'Без названия').trim(),
+      thumb: ch.thumbnail_url || ch.logo || ch.thumb || '',
+      type:  ch.channel_type || ch.type || 'tv',
+      live:  !!(ch.is_live || ch.live),
+      owner: (typeof ch.owner==='object' ? ch.owner?.username : ch.owner) || '',
+    }));
+
+  if (!fresh.length) return;
+  allCh.push(...fresh);
+  applyFilters();
+  if (!currentCh && allCh.length > 0) currentCh = allCh[0];
+}
+
+// ════════════════════════════════════════
+//  FILTERS
+// ════════════════════════════════════════
+function applyFilters() {
+  view = allCh.filter(ch => {
+    if (typeF !== 'all' && ch.type !== typeF) return false;
+    if (searchQ && !ch.name.toLowerCase().includes(searchQ)) return false;
+    return true;
+  });
+  document.getElementById('sbCount').textContent = view.length;
+  renderSidebar();
+  if (curView === 'grid') renderGrid();
+}
+
+function setType(btn, t) {
+  typeF = t;
+  document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  applyFilters();
+}
+
+// ════════════════════════════════════════
+//  SIDEBAR
+// ════════════════════════════════════════
+function renderSidebar() {
+  const el = document.getElementById('chList');
+  el.innerHTML = '';
+  view.forEach(ch => {
+    const d = document.createElement('div');
+    d.className = 'ch-item' + (currentCh?.id === ch.id ? ' on' : '');
+    d.dataset.id = ch.id;
+    d.innerHTML = `
+      <div class="ch-logo">${ch.thumb
+        ? `<img src="${esc(ch.thumb)}" onerror="this.style.display='none'">`
+        : esc(ch.name.slice(0,4))}</div>
+      <div class="ch-info">
+        <div class="ch-name">${esc(ch.name)}</div>
+        <div class="ch-sub">${ch.type==='radio'?'📻':'📺'} · ${esc(ch.owner)}</div>
+      </div>
+      <div class="${ch.live?'pip-live':'pip-off'}"></div>`;
+    d.onclick = () => { play(ch); switchView('player'); };
+    el.appendChild(d);
+  });
+}
+
+// ════════════════════════════════════════
+//  GRID
+// ════════════════════════════════════════
+function renderGrid() {
+  const c = document.getElementById('content');
+  if (curView !== 'grid') return;
+  c.innerHTML = '';
+  const w = document.createElement('div');
+  w.className = 'grid-wrap';
+
+  if (!view.length) {
+    w.innerHTML = '<div class="state-screen"><span>Ничего не найдено</span></div>';
+    c.appendChild(w); return;
+  }
+
+  const live  = view.filter(ch => ch.live);
+  const tv    = view.filter(ch => !ch.live && ch.type==='tv');
+  const radio = view.filter(ch => !ch.live && ch.type==='radio');
+  [['🔴 В эфире',live],['📺 Телеканалы',tv],['📻 Радиостанции',radio]]
+    .filter(([,items]) => items.length)
+    .forEach(([label,items]) => {
+      const lbl = document.createElement('div');
+      lbl.className = 'sec-lbl'; lbl.textContent = label;
+      w.appendChild(lbl);
+      const g = document.createElement('div');
+      g.className = 'ch-grid';
+      items.forEach(ch => g.appendChild(makeCard(ch)));
+      w.appendChild(g);
+    });
+
+  c.appendChild(w);
+}
+
+function makeCard(ch) {
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.innerHTML = `
+    <div class="card-thumb">
+      ${ch.thumb ? `<img src="${esc(ch.thumb)}" onerror="this.remove()">` : `<div class="card-fb">${esc(ch.name.slice(0,6))}</div>`}
+      <div class="play-ov"><div class="play-ic">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="#fff"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      </div></div>
+      <div class="live-badge ${ch.live?'':'off'}">${ch.live?'LIVE':'OFFLINE'}</div>
+      ${ch.type==='radio'?'<div class="radio-badge">RADIO</div>':''}
+    </div>
+    <div class="card-body">
+      <div class="card-name">${esc(ch.name)}</div>
+      <div class="card-owner">${esc(ch.owner)}</div>
+    </div>`;
+  card.onclick = () => { play(ch); switchView('player'); };
+  return card;
+}
+
+// ════════════════════════════════════════
+//  PLAYER
+// ════════════════════════════════════════
+function play(ch) {
+  currentCh = ch;
+  document.querySelectorAll('.ch-item').forEach(el =>
+    el.classList.toggle('on', el.dataset.id === ch.id));
+  if (curView === 'player') renderPlayer(ch);
+}
+
+function renderPlayer(ch) {
+  const c = document.getElementById('content');
+  const src = SOURCES[currentSource];
+  const embedUrl = src.url(ch.id);
+
+  c.innerHTML = `
+    <div class="player-view">
+      <div class="player-top">
+        <div class="embed-wrap">
+          <iframe id="embedFrame"
+            src="${esc(embedUrl)}"
+            allowfullscreen
+            allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+            referrerpolicy="no-referrer-when-downgrade"
+          ></iframe>
+        </div>
+      </div>
+
+      <!-- SOURCE SWITCHER -->
+      <div class="source-bar">
+        <span class="source-label">Источник:</span>
+        ${SOURCES.map((s,i) => `
+          <button class="src-btn ${i===currentSource?'on':''}" onclick="switchSource(${i})">
+            <span class="src-dot"></span>${esc(s.label)}
+          </button>`).join('')}
+      </div>
+
+      <div class="pib">
+        <div class="pib-logo">${ch.thumb
+          ? `<img src="${esc(ch.thumb)}" onerror="this.style.display='none'">`
+          : esc(ch.name.slice(0,3))}</div>
+        <div class="pib-name">${esc(ch.name)}</div>
+        <div class="pib-owner">@${esc(ch.owner)}</div>
+        <div class="${ch.live?'pib-live':'pib-off'}">${ch.live?'LIVE':'OFFLINE'}</div>
+      </div>
+
+      <div class="p-related">
+        <div class="sec-lbl">Другие каналы</div>
+        <div class="ch-grid" id="relGrid"></div>
+      </div>
+    </div>`;
+
+  renderRelated(ch);
+}
+
+function switchSource(idx) {
+  currentSource = idx;
+  // Просто обновляем iframe src и кнопки
+  const frame = document.getElementById('embedFrame');
+  if (frame && currentCh) {
+    frame.src = SOURCES[idx].url(currentCh.id);
+  }
+  document.querySelectorAll('.src-btn').forEach((b,i) =>
+    b.classList.toggle('on', i === idx));
+}
+
+function renderRelated(current) {
+  const el = document.getElementById('relGrid');
+  if (!el) return;
+  view.filter(c => c.id !== current.id).slice(0,12).forEach(ch => el.appendChild(makeCard(ch)));
+}
+
+// ════════════════════════════════════════
+//  VIEW / STATE
+// ════════════════════════════════════════
+function switchView(v) {
+  curView = v;
+  document.getElementById('tabGrid').classList.toggle('on', v==='grid');
+  document.getElementById('tabPlayer').classList.toggle('on', v==='player');
+  if (v==='grid') renderGrid();
+  else if (currentCh) renderPlayer(currentCh);
+  else showNoCh();
+}
+
+function showNoCh() {
+  document.getElementById('content').innerHTML = `
+    <div class="no-ch">
+      <div class="no-ch-icon">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="2" y="7" width="20" height="15" rx="2"/><polyline points="17 2 12 7 7 2"/>
+        </svg>
+      </div>
+      <h3>Выберите канал</h3><p>Нажмите на любой канал</p>
+    </div>`;
+}
+
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>
