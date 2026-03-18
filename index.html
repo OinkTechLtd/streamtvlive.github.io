@@ -346,8 +346,10 @@ const SOURCES = [
   { id:'embess',  label:'Embess Studio', url: id => `https://embesslivestudio.lovable.app/player?channel=${id}` },
   { id:'native',  label:'StreamLiveTV',  url: id => `https://bbacesemc33e7hd47kfq.containers.yandexcloud.net/embed/${id}` },
   { id:'embess-new', label:'Embess', url: id => `https://embesslivestudio.vercel.app/embed/${id}` },
-  { id:'embess-proxy', label:'Proxy Embess', url: id => `https://api.allorigins.win/raw?url=https://embesslivestudio.vercel.app/embed/${id}` },
+  { id:'embess-proxy', label:'Proxy Embess', url: id => `https://cors-anywhere.herokuapp.com/embesslivestudio.vercel.app/embed/${id}` },
   { id:'flow', label:'Flow', url: id => `https://stlivetv.netlify.app/embed/${id}` },
+  { id:'Оригинал', label:'Оригинал (Не рекомендуется с 1 апреля 2026 закрытие данного источника)', url: id => `https://livestudio-creator.lovable.app/embed/${id}` },
+  { id:'Оригинал2', label:'Оригинал', url: id => `https://bbacesemc33e7hd47kfq.containers.yandexcloud.net/embed/${id}` },
 ];
 
 // ══════════════════════════════════════════════
